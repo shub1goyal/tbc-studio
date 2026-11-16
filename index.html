@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBC AI Stickman Studio</title>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card: #131822;
+      --card-2: #0f141d;
+      --border: #232b3b;
+      --accent: #facc15;
+      --green: #22c55e;
+      --red: #ef4444;
+      --blue: #38bdf8;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; }
+    .container { max-width: 720px; margin: 0 auto; display: grid; gap: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 14px 36px rgba(0,0,0,0.4); }
+    h1 { margin: 0 0 4px; font-size: 1.35rem; }
+    h2 { margin: 0 0 12px; font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    p.sub { margin: 0 0 14px; color: var(--muted); font-size: 0.88rem; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin: 12px 0 5px; }
+    input, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: #0d1118; color: var(--text); font-size: 0.92rem; }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+    .check { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.9rem; cursor: pointer; }
+    .check input { width: auto; }
+    button { padding: 11px 14px; border: 0; border-radius: 10px; background: var(--accent); color: #111827; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
+    button.full { width: 100%; margin-top: 16px; padding: 13px; font-size: 1rem; }
+    button.secondary { background: #1f2937; color: var(--text); border: 1px solid var(--border); font-weight: 600; padding: 8px 12px; font-size: 0.82rem; }
+    button.small { padding: 7px 11px; font-size: 0.8rem; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .status-msg { margin-top: 12px; font-size: 0.86rem; line-height: 1.45; color: var(--muted); word-break: break-word; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .list { display: grid; gap: 10px; }
+    .item { background: var(--card-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+    .item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .item-title { font-weight: 600; font-size: 0.9rem; }
+    .item-meta { font-size: 0.78rem; color: var(--muted); }
+    .badge { font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; white-space: nowrap; }
+    .b-success { background: rgba(34,197,94,0.16); color: var(--green); }
+    .b-failure { background: rgba(239,68,68,0.16); color: var(--red); }
+    .b-running { background: rgba(56,189,248,0.16); color: var(--blue); }
+    .b-queued { background: rgba(250,204,21,0.16); color: var(--accent); }
+    .actions-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .actions-row input[type="datetime-local"] { width: auto; flex: 1; min-width: 185px; padding: 6px 9px; font-size: 0.8rem; }
+    details summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>TBC AI Video Studio</h1>
+      <p class="sub">Generate videos, monitor live runs, and post or schedule to YouTube from anywhere.</p>
+
+      <details id="authDetails">
+        <summary>GitHub Connection Settings (saved in browser)</summary>
+        <div class="row">
+          <div>
+            <label for="repo">Repo (owner/name)</label>
+            <input id="repo" type="text" value="shub1goyal/tbc-video-engine" />
+          </div>
+          <div>
+            <label for="pat">GitHub Personal Access Token</label>
+            <input id="pat" type="password" placeholder="ghp_... or github_pat_... (Actions + Contents)" />
+          </div>
+        </div>
+      </details>
+
+      <label for="topic">Video Topic</label>
+      <input id="topic" type="text" placeholder="e.g. What 72 Hours Without Sleep Does to Your Brain" />
+
+      <div class="row">
+        <div>
+          <label for="duration">Target Length</label>
+          <select id="duration">
+            <option value="60">1 Minute (12 clips)</option>
+            <option value="180">3 Minutes (36 clips)</option>
+            <option value="600">10 Minutes (120 clips)</option>
+            <option value="1000" selected>16-18 Minutes (200 clips)</option>
+          </select>
+        </div>
+        <div>
+          <label for="publishAt">Optional YouTube Schedule (Local Time)</label>
+          <input id="publishAt" type="datetime-local" />
+        </div>
+      </div>
+
+      <label class="check">
+        <input id="upload" type="checkbox" />
+        Auto-upload final MP4 to YouTube when finished
+      </label>
+
+      <button id="go" class="full">Generate Video</button>
+      <div id="status" class="status-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>
+        <span>Live Generation &amp; Publish Status</span>
+        <button id="refreshBtn" class="secondary">Refresh</button>
+      </h2>
+      <div id="runsList" class="list"><div class="item-meta">Enter your GitHub PAT above to load status.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>
+        <span>Ready Videos (Post / Schedule to YouTube)</span>
+      </h2>
+      <div id="releasesList" class="list"><div class="item-meta">Enter your GitHub PAT above to load generated videos.</div></div>
+    </div>
+  </div>
+
+  <script>
+    const patEl = document.getElementById('pat');
+    const repoEl = document.getElementById('repo');
+    const authDetails = document.getElementById('authDetails');
+    const statusEl = document.getElementById('status');
+    const runsList = document.getElementById('runsList');
+    const releasesList = document.getElementById('releasesList');
+
+    patEl.value = localStorage.getItem('tbc_gh_pat') || '';
+    repoEl.value = localStorage.getItem('tbc_gh_repo') || 'shub1goyal/tbc-video-engine';
+    if (!patEl.value) authDetails.open = true;
+
+    function getAuth() {
+      const repo = repoEl.value.trim();
+      const pat = patEl.value.trim();
+      if (pat) localStorage.setItem('tbc_gh_pat', pat);
+      if (repo) localStorage.setItem('tbc_gh_repo', repo);
+      return { repo, pat };
+    }
+
+    async function ghFetch(path, opts = {}) {
+      const { repo, pat } = getAuth();
+      if (!repo || !pat) throw new Error('Missing repo or GitHub PAT.');
+      const res = await fetch(`https://api.github.com/repos/${repo}${path}`, {
+        ...opts,
+        headers: {
+          Authorization: `Bearer ${pat}`,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          ...(opts.headers || {}),
+        },
+      });
+      return res;
+    }
+
+    function badgeForRun(run) {
+      if (run.status === 'completed') {
+        if (run.conclusion === 'success') return '<span class="badge b-success">Completed</span>';
+        return `<span class="badge b-failure">${run.conclusion || 'Failed'}</span>`;
+      }
+      if (run.status === 'in_progress') return '<span class="badge b-running">Running</span>';
+      return `<span class="badge b-queued">${run.status}</span>`;
+    }
+
+    async function loadDashboard() {
+      const { pat } = getAuth();
+      if (!pat) return;
+      try {
+        const [runsRes, relRes] = await Promise.all([
+          ghFetch('/actions/runs?per_page=8'),
+          ghFetch('/releases?per_page=8'),
+        ]);
+
+        if (runsRes.ok) {
+          const { workflow_runs = [] } = await runsRes.json();
+          if (workflow_runs.length === 0) {
+            runsList.innerHTML = '<div class="item-meta">No workflow runs yet.</div>';
+          } else {
+            runsList.innerHTML = workflow_runs.map((r) => `
+              <div class="item">
+                <div class="item-top">
+                  <div>
+                    <div class="item-title">${escapeHtml(r.display_title || r.name)}</div>
+                    <div class="item-meta">${escapeHtml(r.name)} • #${r.run_number} • ${new Date(r.created_at).toLocaleString()}</div>
+                  </div>
+                  ${badgeForRun(r)}
+                </div>
+                <div class="actions-row">
+                  <a href="${r.html_url}" target="_blank">View Logs</a>
+                </div>
+              </div>
+            `).join('');
+          }
+        } else {
+          runsList.innerHTML = `<div class="item-meta">Could not load runs (HTTP ${runsRes.status}).</div>`;
+        }
+
+        if (relRes.ok) {
+          const releases = await relRes.json();
+          if (!releases.length) {
+            releasesList.innerHTML = '<div class="item-meta">No completed video releases yet.</div>';
+          } else {
+            releasesList.innerHTML = releases.map((rel) => {
+              const mp4 = (rel.assets || []).find((a) => a.name.endsWith('.mp4'));
+              const safeTag = escapeHtml(rel.tag_name);
+              return `
+                <div class="item">
+                  <div class="item-top">
+                    <div>
+                      <div class="item-title">${escapeHtml(rel.name || rel.tag_name)}</div>
+                      <div class="item-meta">${safeTag} • ${new Date(rel.created_at).toLocaleString()}${mp4 ? ` • ${(mp4.size / (1024*1024)).toFixed(1)} MB` : ''}</div>
+                    </div>
+                    ${mp4 ? `<a href="${mp4.browser_download_url}" target="_blank">Download MP4</a>` : ''}
+                  </div>
+                  <div class="actions-row">
+                    <button class="small" onclick="publishRelease('${safeTag}', '')">Post to YouTube Now</button>
+                    <input type="datetime-local" id="sched-${safeTag}" />
+                    <button class="secondary small" onclick="publishRelease('${safeTag}', document.getElementById('sched-${safeTag}').value)">Schedule</button>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        runsList.innerHTML = `<div class="item-meta">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    window.publishRelease = async function (releaseTag, localDateTime) {
+      let publish_at = '';
+      if (localDateTime) {
+        publish_at = new Date(localDateTime).toISOString();
+      }
+      statusEl.textContent = `${publish_at ? 'Scheduling' : 'Publishing'} ${releaseTag} to YouTube...`;
+      try {
+        const res = await ghFetch('/actions/workflows/publish.yml/dispatches', {
+          method: 'POST',
+          body: JSON.stringify({
+            ref: 'main',
+            inputs: { release_tag: releaseTag, publish_at },
+          }),
+        });
+        if (res.status === 204) {
+          statusEl.textContent = `Dispatched YouTube ${publish_at ? 'schedule' : 'upload'} for ${releaseTag}!`;
+          setTimeout(loadDashboard, 2500);
+        } else {
+          statusEl.textContent = `Error ${res.status}: ${await res.text()}`;
+        }
+      } catch (err) {
+        statusEl.textContent = `Publish failed: ${err.message}`;
+      }
+    };
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    document.getElementById('go').addEventListener('click', async () => {
+      const topic = document.getElementById('topic').value.trim();
+      const duration_sec = document.getElementById('duration').value;
+      const upload_youtube = document.getElementById('upload').checked;
+      const localPublish = document.getElementById('publishAt').value;
+      const publish_at = localPublish ? new Date(localPublish).toISOString() : '';
+
+      if (!topic) {
+        statusEl.textContent = 'Please enter a video topic.';
+        return;
+      }
+
+      const btn = document.getElementById('go');
+      btn.disabled = true;
+      statusEl.textContent = 'Dispatching generation workflow...';
+
+      try {
+        const res = await ghFetch('/actions/workflows/produce.yml/dispatches', {
+          method: 'POST',
+          body: JSON.stringify({
+            ref: 'main',
+            inputs: { topic, duration_sec, upload_youtube, publish_at },
+          }),
+        });
+
+        if (res.status === 204) {
+          statusEl.textContent = 'Generation started! Live status will update below.';
+          setTimeout(loadDashboard, 2500);
+        } else {
+          statusEl.textContent = `Error ${res.status}: ${await res.text()}`;
+        }
+      } catch (e) {
+        statusEl.textContent = `Request failed: ${e.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
+    patEl.addEventListener('change', loadDashboard);
+    loadDashboard();
+    setInterval(loadDashboard, 15000);
+  </script>
+</body>
+</html>
